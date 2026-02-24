@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from services.pikpak_client import PikPakClient
 
@@ -12,20 +12,8 @@ class SendToCloudRequest(BaseModel):
 
 @router.post("/send")
 async def send_to_cloud(req: SendToCloudRequest):
-    """Envia vídeo raspado direto para a nuvem PikPak"""
+    """Envia URL de vídeo diretamente para o PikPak"""
+    if not client.is_authenticated:
+        raise HTTPException(status_code=401, detail="Não autenticado")
     result = await client.add_url(req.video_url, req.folder_id)
     return {"success": True, "task": result}
-
-@router.get("/folders")
-async def list_folders():
-    """Lista pastas disponíveis na nuvem PikPak"""
-    folders = await client.list_folders()
-    return {"folders": folders}
-
-@router.post("/create-folder")
-async def create_folder(body: dict):
-    """Cria nova pasta na nuvem PikPak"""
-    name = body.get("name", "Nova Pasta")
-    parent_id = body.get("parent_id", "")
-    result = await client.create_folder(name, parent_id)
-    return {"folder": result}
